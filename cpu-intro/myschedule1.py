@@ -121,24 +121,34 @@ running_pid = -1
 
 done_or_block = True;
 
+io_nums = 0
+
+print('%s' % 'Time', end='') 
+for pid in range(len(processes)):
+    print('%14s' % ('PID:%2d' % (pid)), end='')
+print('%14s' % 'CPU', end='')
+print('%14s' % 'IOs', end='')
+print('')
+
 while 1:
     time = time + 1
-    print('time:%d' % time)
-    print('processes[0][PROC_CODE]:',processes[0][PROC_CODE])
-    print('processes[1][PROC_CODE]:',processes[1][PROC_CODE])
-    print('processes[2][PROC_CODE]:',processes[2][PROC_CODE])
-    print('processes[0][PROC_STATE]:',processes[0][PROC_STATE])
-    print('processes[1][PROC_STATE]:',processes[1][PROC_STATE])
-    print('processes[2][PROC_STATE]:',processes[2][PROC_STATE])
-    print('processes[0][BLOCK_FINISH_TIME]:',processes[0][BLOCK_FINISH_TIME])
-    print('processes[1][BLOCK_FINISH_TIME]:',processes[1][BLOCK_FINISH_TIME])
-    print('processes[2][BLOCK_FINISH_TIME]:',processes[2][BLOCK_FINISH_TIME])
-    # first part: process decision
+    # print('time:%d' % time)
+    # print('processes[0][PROC_CODE]:',processes[0][PROC_CODE])
+    # print('processes[1][PROC_CODE]:',processes[1][PROC_CODE])
+    # print('processes[2][PROC_CODE]:',processes[2][PROC_CODE])
+    # print('processes[0][PROC_STATE]:',processes[0][PROC_STATE])
+    # print('processes[1][PROC_STATE]:',processes[1][PROC_STATE])
+    # print('processes[2][PROC_STATE]:',processes[2][PROC_STATE])
+    # print('processes[0][BLOCK_FINISH_TIME]:',processes[0][BLOCK_FINISH_TIME])
+    # print('processes[1][BLOCK_FINISH_TIME]:',processes[1][BLOCK_FINISH_TIME])
+    # print('processes[2][BLOCK_FINISH_TIME]:',processes[2][BLOCK_FINISH_TIME])
+    # first part: process decision and  state change
     if running_pid == -1 and done_or_block:
         #
         for i in range(len(processes)):
             if processes[i][PROC_STATE] == STATE_READY:
                 #
+                processes[i][PROC_STATE] = STATE_RUNNING
                 running_pid = i
                 break
         if running_pid == -1:
@@ -149,7 +159,25 @@ while 1:
                     break
             if not exist_block:
                 break
-    print(' first part running_pid:%s' % running_pid)
+    # print(' first part running_pid:%s' % running_pid)
+    # Output 
+
+    print('%2s' % (time), end='')
+    for pid in range(len(processes)):
+        if pid == running_pid:
+            print('%14s' % ('RUN' + ':' + processes[pid][PROC_CODE][0]), end='')
+        else:
+            print('%14s' % (processes[pid][PROC_STATE]), end='')
+    if running_pid != -1:
+        print('%14s' % '1', end='')
+    else:
+        print('%14s' % ' ', end='')
+    if io_nums == 0:
+        print('%14s' % ' ', end='')
+    else:
+        print('%14s' % (io_nums), end='')
+    print('')
+
     # second part: execute instruction
 
     execute_instruction = ''
@@ -177,6 +205,7 @@ while 1:
         for i in range(len(processes)):
             if len(processes[i][BLOCK_FINISH_TIME]) !=0 and time == processes[i][BLOCK_FINISH_TIME][len(processes[i][BLOCK_FINISH_TIME]) - 1]:
                 processes[i][PROC_STATE] = STATE_READY
+                io_nums -= 1
                 if process_switch_behavior == SCHED_SWITCH_ON_END:
                     processes[i][PROC_STATE] = STATE_RUNNING
                     running_pid = i
@@ -194,6 +223,7 @@ while 1:
         for i in range(len(processes)):
             if len(processes[i][BLOCK_FINISH_TIME]) !=0 and time == processes[i][BLOCK_FINISH_TIME][len(processes[i][BLOCK_FINISH_TIME]) - 1]:
                 processes[i][PROC_STATE] = STATE_READY
+                io_nums -= 1
 
         if execute_instruction == DO_COMPUTE or execute_instruction == DO_IO_DONE:
             if len(processes[running_pid][PROC_CODE]) == 0:
@@ -212,6 +242,7 @@ while 1:
         elif execute_instruction == DO_IO:
             processes[running_pid][PROC_STATE] = STATE_WAIT
             processes[running_pid][BLOCK_FINISH_TIME].append(time + 5)
+            io_nums += 1
             running_pid = -1
             if process_switch_behavior == SCHED_SWITCH_ON_END:
                 done_or_block = False
@@ -223,7 +254,10 @@ while 1:
                             processes[i][PROC_STATE] = STATE_RUNNING
                             running_pid = i
                             break
-                print('running_pid:%s' % running_pid)
+                #print('running_pid:%s' % running_pid)
+    #
+
+
 
 print("END")
 

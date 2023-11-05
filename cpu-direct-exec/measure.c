@@ -35,13 +35,15 @@ int main()
     int rc = fork();
     if(rc == 0)
     {
+        struct timeval val1,val2;
         CPU_SET(0, &set);
         sched_setaffinity(getpid(), sizeof(set), &set);
         close(fd1[0]);
         close(fd2[1]);
         char msg[20] = "message";
         char buf[20] = "";
-        int time1 = __rdtsc();
+        //int time1 = __rdtsc();
+        int ret1 = gettimeofday(&val1, NULL);
         for(int i = 0;i< 5; i++)
         {
             write(fd1[1], msg,strlen(msg));
@@ -49,8 +51,11 @@ int main()
             read(fd2[0], buf,strlen("message"));
             printf("child recv mesasage: %s\n",buf);
         }
-        int time2 = __rdtsc();
-        printf("time of 10 context switch : %d \n",time2 - time1);
+        int ret2 = gettimeofday(&val2, NULL);
+        int ms = val2.tv_usec - val1.tv_usec;
+        printf("ten process context switch consume time : %d ms\n",ms);
+        //int time2 = __rdtsc();
+        //printf("time of 10 context switch : %d \n",time2 - time1);
     }
     else
     {   

@@ -1,4 +1,13 @@
 #! /usr/bin/env python 
+
+print("123","234","345")
+
+str = "mystring"
+
+num = 123456
+
+print('this is str: %s and this is num: %d  next str: %s ' % (str,num,'string for another'))
+
 def space(num_columns):
     for i in range(num_columns):
         print('%10s' % ' ', end='')

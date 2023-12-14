@@ -2,9 +2,12 @@
 #include <sys/time.h>
 #include <stdlib.h>
 #include <assert.h>
+#include <unistd.h>
+#include <string.h>
 
 int main(int argc, char* argv[])
 {
+    //sleep(10);
     if (argc != 3)
     {
         printf("two arguments need\n");
@@ -15,6 +18,7 @@ int main(int argc, char* argv[])
     int test_nums = atoi(argv[2]);
     assert(1 <= test_nums && test_nums <= 10);
     int array[1024 * 40];
+    memset(array, 0, sizeof(array));
     int jump  = 1024;
     struct timeval time1,time2;
     gettimeofday(&time1, NULL);

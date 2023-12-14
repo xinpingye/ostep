@@ -2,7 +2,7 @@
 
 for i in $(seq 1 40);
 do
-    nums=$(./tlb $i 10)
+    nums=$(taskset -c 1,1 ./tlb  $i 10)
     echo $i $nums >> ./example.dat
     sleep 1
 done

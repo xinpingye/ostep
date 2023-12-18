@@ -31,6 +31,7 @@ class cpu:
         self.regs[r] -= i
         return 0
     def test_i_and_r(self, i, r):
+        self.conditions = {0:0, 1:0, 2:0, 3:0}
         reg_val = self.regs[r]
         if (reg_val > i):
             self.conditions[0] = 1
@@ -165,20 +166,41 @@ class cpu:
             elif (opcode == 'halt'):
                 self.memory[pc] = 'self.halt()'
                 pc += 1
-    def run(self, one_process):
-        one_process.restore()
-        self.PC = one_process.pc
+    # def run(self, one_process):
+    #     one_process.restore()
+    #     self.PC = one_process.pc
+    #     pc_prev = self.PC
+    #     i = 10
+    #     while True:            
+    #         print(self.memory[self.PC])
+    #         rc = eval(self.memory[self.PC])
+    #         if pc_prev == self.PC:
+    #             self.PC += 1
+    #         pc_prev = self.PC
+    #         if rc == -1:
+    #             return
+    #         i -= 1
+    def run(self, processes):
+        processes.p_list[processes.cur].restore()
+        print(processes.p_list[processes.cur].tid)
         pc_prev = self.PC
-        i = 10
-        while True:            
+        i = 15
+        # while i != 0:
+        while True:
+            # i -= 1
             print(self.memory[self.PC])
             rc = eval(self.memory[self.PC])
             if pc_prev == self.PC:
                 self.PC += 1
             pc_prev = self.PC
             if rc == -1:
-                return
-            i -= 1
+                if  processes.one_process_done() == -1:
+                    return
+                processes.p_list[processes.cur].restore()
+                print(processes.p_list[processes.cur].tid)
+                pc_prev = self.PC  
+
+
         
 class process:
     def __init__(self, cpu, tid, pc, regs={0:0, 1:0, 2:0, 3:0}):
@@ -204,11 +226,44 @@ class process:
         self.cpu.regs = self.regs
         self.cpu.PC = self.pc
         self.cpu.conditions = self.conditions
+class process_list:
+    def __init__(self):
+        self.p_list = []
+        self.cur = 0
+        self.active = 0
+    def add(self, p):
+        self.p_list.append(p)
+        self.active += 1
+    def one_process_done(self):
+        self.active -= 1
+        self.p_list[self.cur].set_done()
+        if self.active == 0:
+            return -1
+        self.next_run_process()
+        return 0
+    def next_run_process(self):
+        for i in range(self.cur + 1, len(self.p_list)):
+            if self.p_list[i].is_done():
+                continue
+            self.cur = i
+            return
+        for i in range(0, self.cur + 1):
+            if self.p_list[i].is_done():
+                continue
+            self.cur = i
+            return
+
 
 cpu = cpu()
 file = sys.argv[1]
+process_nums = int(sys.argv[2])
 cpu.load(file,1000)
-cpu.run(process(cpu, 1, 1000, {0:1, 1:0, 2:0, 3:0}))
+processes = process_list()
+for i in range(0, process_nums):
+    process_tmp = process(cpu, i, 1000, {0:1, 1:2, 2:0, 3:3})
+    processes.add(process_tmp)
+cpu.run(processes)
+# cpu.run(process(cpu, 1, 1000, {0:1, 1:0, 2:0, 3:4}))
 
 print("end")
     

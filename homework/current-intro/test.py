@@ -1,5 +1,8 @@
 #! /usr/bin/env python
 
+# import hexdump
+from codecs import encode
+
 def dospace(howmuch):
     for i in range(howmuch):
         print('%24s' % ' ', end=' ')
@@ -111,3 +114,36 @@ def func(arg1, arg2, arg3):
 str = 'func(%d, %d, %s)' % (1, 2, "3")
 print(str)
 eval(str)
+str = '#123456 566'
+print(str.split('#'))
+str = '   123456 2345  '
+print(str)
+for character in str:
+    print(character, character.encode('utf-8').hex())
+# hexdump.dump(str, sep = ':')
+str = str.strip()
+print("***************")
+# hexdump.dump(str, sep = ':')
+for character in str:
+    print(character, character.encode('utf-8').hex())
+
+instruction = "123  345   1234566"
+print(instruction.split(' ', 2))
+print(instruction.split(None, 2))
+
+data = '$12345'
+print(data[1:])
+
+if (1 == 2):
+    print(1)
+elif(2 == 2):
+    print(2)
+
+str = "11111"
+print("222",str,"333")
+str = "     \n"
+str = str.strip()
+print(len(str))
+str = str.split(None, 1)
+print(str)
+print(len(str))

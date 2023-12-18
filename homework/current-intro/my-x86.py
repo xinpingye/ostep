@@ -180,25 +180,38 @@ class cpu:
     #         if rc == -1:
     #             return
     #         i -= 1
-    def run(self, processes):
+    def run(self, processes, interval):
         processes.p_list[processes.cur].restore()
         print(processes.p_list[processes.cur].tid)
         pc_prev = self.PC
         i = 15
+        time = 0
         # while i != 0:
         while True:
             # i -= 1
+            # print('interval:', interval, 'time:', time)
             print(self.memory[self.PC])
             rc = eval(self.memory[self.PC])
             if pc_prev == self.PC:
                 self.PC += 1
             pc_prev = self.PC
+            time += 1
             if rc == -1:
                 if  processes.one_process_done() == -1:
                     return
                 processes.p_list[processes.cur].restore()
                 print(processes.p_list[processes.cur].tid)
-                pc_prev = self.PC  
+                pc_prev = self.PC
+                if time == interval:
+                    time = 0
+                continue 
+            if time == interval:
+                processes.p_list[processes.cur].save()
+                processes.next_run_process()
+                processes.p_list[processes.cur].restore()
+                print(processes.p_list[processes.cur].tid)
+                pc_prev = self.PC
+                time = 0
 
 
         
@@ -257,13 +270,14 @@ class process_list:
 cpu = cpu()
 file = sys.argv[1]
 process_nums = int(sys.argv[2])
+interval = int(sys.argv[3])
 cpu.load(file,1000)
 processes = process_list()
 for i in range(0, process_nums):
     process_tmp = process(cpu, i, 1000, {0:1, 1:2, 2:0, 3:3})
     processes.add(process_tmp)
-cpu.run(processes)
+cpu.run(processes, interval)
 # cpu.run(process(cpu, 1, 1000, {0:1, 1:0, 2:0, 3:4}))
-
+print('ax:', cpu.regs[0], 'bx:', cpu.regs[1], 'cx:', cpu.regs[2], 'dx:', cpu.regs[3])
 print("end")
     

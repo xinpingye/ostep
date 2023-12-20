@@ -8,12 +8,12 @@ class cpu:
         for i in range(0, 1024 * 4):
             self.memory[i] = 0
         self.regs = {}
-        for i in range(0, 4):
+        for i in range(0, 6):
             self.regs[i] = 0
         self.conditions = {}
         for i in range(0,3):
             self.conditions[i] = -1
-        self.register_name_to_nums_mapping = {"ax":0, "bx":1, "cx":2, "dx":3}
+        self.register_name_to_nums_mapping = {"ax":0, "bx":1, "cx":2, "dx":3, "ex":4, "fx":5}
         self.var = {}
     # functions for specila instruction
     def mov_i_to_m(self, src, dst):
@@ -24,6 +24,16 @@ class cpu:
         return 0
     def mov_m_to_r(self, src, dst):
         self.regs[dst] = self.memory[src]
+        return 0
+    def mov_m_to_r_2(self, memory_addr, reg1_value, reg2_value, mult, dst):
+        src = memory_addr + self.regs[reg1_value] + self.regs[reg2_value] * mult
+        print("src:", src)
+        self.regs[dst] = self.memory[src]
+        return 0;
+    def mov_r_to_m_2(self, src, memory_addr, reg1_value, reg2_value, mult):
+        dst = memory_addr + self.regs[reg1_value] + self.regs[reg2_value] * mult
+        print("dst:", dst)
+        self.memory[dst] = self.regs[src]
         return 0
     def add_i_to_r(self, i, r):
         self.regs[r] += i
@@ -78,8 +88,19 @@ class cpu:
                return 2, int(str)
             else:
                 memory_addr = int(str.split('(')[0])
-                reg_value = self.regs[self.register_name_to_nums_mapping[str.split('(')[1].split(')')[0][1:]]]
-                return 2, memory_addr + reg_value
+                tmp = str.split('(')[1].split(')')[0]
+                tmp_list = tmp.split(':')
+                if  len(tmp_list) == 1:
+                    reg_value = self.regs[self.register_name_to_nums_mapping[str.split('(')[1].split(')')[0][1:]]]
+                    return 2, memory_addr + reg_value
+                elif len(tmp_list) == 3:
+                    reg1 = self.register_name_to_nums_mapping[tmp_list[0][1:]]
+                    reg2 = self.register_name_to_nums_mapping[tmp_list[1][1:]]
+                    # reg1_value = self.regs[self.register_name_to_nums_mapping[reg1]]
+                    # reg2_value = self.regs[self.register_name_to_nums_mapping[reg2]]
+                    mult = int(tmp_list[2])
+                    # print('reg1:', reg1, 'reg2:', reg2, 'reg1_value:', reg1_value, 'reg2_value:', reg2_value, 'mult:', mult)
+                    return 3, [memory_addr, reg1 , reg2 , mult]
         elif str in self.var:
             return 2, self.var[str]          
     def load(self, file, loadaddr):
@@ -142,6 +163,17 @@ class cpu:
                     pc += 1   
                 elif(first_type == 2 and second_type == 1):
                     self.memory[pc] = 'self.mov_m_to_r(%d, %d)' % (first_data, second_data)
+                    pc += 1
+                elif(first_type == 3 and second_type == 1):
+                    self.memory[pc] = 'self.mov_m_to_r_2(%d, %d, %d, %d ,%d)' % (\
+                                                         first_data[0], first_data[1],\
+                                                         first_data[2], first_data[3],\
+                                                         second_data)
+                    pc += 1
+                elif(first_type == 1 and second_type == 3):
+                    self.memory[pc] = 'self.mov_r_to_m_2(%d, %d, %d, %d ,%d)' % (first_data, \
+                                                         second_data[0], second_data[1],\
+                                                         second_data[2], second_data[3])
                     pc += 1
             elif (opcode == 'add'):
                 datas = one_command.split(None, 1)[1]
@@ -243,7 +275,7 @@ class cpu:
 
         
 class process:
-    def __init__(self, cpu, tid, pc, regs={0:0, 1:0, 2:0, 3:0}):
+    def __init__(self, cpu, tid, pc, regs={0:0, 1:0, 2:0, 3:0, 4:0, 5:0}):
         self.cpu = cpu
         self.tid = tid
         self.pc = pc
@@ -301,10 +333,11 @@ interval = int(sys.argv[3])
 cpu.load(file,1000)
 processes = process_list()
 for i in range(0, process_nums):
-    process_tmp = process(cpu, i, 1000, {0:1, 1:2, 2:0, 3:3})
+    process_tmp = process(cpu, i, 1000, {0:1, 1:1, 2:1, 3:3, 4:0, 5:0})
     processes.add(process_tmp)
 cpu.run(processes, interval)
 # cpu.run(process(cpu, 1, 1000, {0:1, 1:0, 2:0, 3:4}))
-print('count:', cpu.memory[cpu.var['count']], 'ax:', cpu.regs[0], 'bx:', cpu.regs[1], 'cx:', cpu.regs[2], 'dx:', cpu.regs[3])
+print('count:', cpu.memory[cpu.var['count']], 'ax:', cpu.regs[0], 'bx:', cpu.regs[1], \
+      'cx:', cpu.regs[2], 'dx:', cpu.regs[3], 'ex:', cpu.regs[4], 'fx:', cpu.regs[5])
 print("end")
     

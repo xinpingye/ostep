@@ -31,6 +31,11 @@ class cpu:
     def sub_i_from_r(self, i, r):
         self.regs[r] -= i
         return 0
+    def xchg_r_and_m(self, r, m):
+        tmp = self.memory[m]
+        self.memory[m] = self.regs[r]
+        self.regs[r] = tmp
+        return 0
     def test_i_and_r(self, i, r):
         self.conditions = {0:0, 1:0, 2:0, 3:0}
         reg_val = self.regs[r]
@@ -106,7 +111,7 @@ class cpu:
             opcode = one_command.split(None, 1)[0]
             if (opcode == 'mov' or opcode == 'add' or opcode == 'sub' or opcode\
             == 'test' or opcode == 'jgt' or opcode == 'jgte' or opcode == 'je'\
-            or opcode == 'jne' or opcode == 'halt'):
+            or opcode == 'jne' or opcode == 'halt' or opcode == 'xchg'):
                 pc += 1
         fd.close()
         fd = open(file)
@@ -153,6 +158,14 @@ class cpu:
                 first_type, first_data = self.from_data_str_to_data(first_data)
                 second_type, second_data = self.from_data_str_to_data(second_data)
                 self.memory[pc] = 'self.sub_i_from_r(%d, %d)' % (first_data, second_data)
+                pc += 1
+            elif (opcode == 'xchg'):
+                datas = one_command.split(None, 1)[1]
+                first_data = datas.split(',')[0]
+                second_data = datas.split(',')[1].strip()
+                first_type, first_data = self.from_data_str_to_data(first_data)
+                second_type, second_data = self.from_data_str_to_data(second_data)
+                self.memory[pc] = 'self.xchg_r_and_m(%d, %d)' % (first_data, second_data)
                 pc += 1
             elif (opcode == 'test'):
                 datas = one_command.split(None, 1)[1]

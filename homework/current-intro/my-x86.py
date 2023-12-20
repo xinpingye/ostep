@@ -14,6 +14,7 @@ class cpu:
         for i in range(0,3):
             self.conditions[i] = -1
         self.register_name_to_nums_mapping = {"ax":0, "bx":1, "cx":2, "dx":3}
+        self.var = {}
     # functions for specila instruction
     def mov_i_to_m(self, src, dst):
         self.memory[dst] = src
@@ -73,11 +74,14 @@ class cpu:
             else:
                 memory_addr = int(str.split('(')[0])
                 reg_value = self.regs[self.register_name_to_nums_mapping[str.split('(')[1].split(')')[0][1:]]]
-                return 2, memory_addr + reg_value         
+                return 2, memory_addr + reg_value
+        elif str in self.var:
+            return 2, self.var[str]          
     def load(self, file, loadaddr):
         fd = open(file)
         pc = loadaddr
         name_to_pc_mapping = {}
+        var_addr = 100
         for line in fd:
             if len(line.strip()) == 0:
                 continue
@@ -86,8 +90,18 @@ class cpu:
                 continue
             if line[0] == '.':
                 line = line.strip()
-                name_to_pc_mapping[line] = pc
-                continue 
+                line_split_list = line.split()
+                if len(line_split_list) == 1:
+                    name_to_pc_mapping[line] = pc
+                    continue 
+                else:
+                    if  line_split_list[0] == '.var':
+                        self.var[line_split_list[1]] = var_addr
+                        mult = 1
+                        if  len(line_split_list) == 3:
+                            mult = int(line_split_list[2])
+                        var_addr += mult * 4
+                        continue
             one_command = line_split[0].strip()
             opcode = one_command.split(None, 1)[0]
             if (opcode == 'mov' or opcode == 'add' or opcode == 'sub' or opcode\

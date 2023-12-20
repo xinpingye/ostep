@@ -25,15 +25,23 @@ class cpu:
     def mov_m_to_r(self, src, dst):
         self.regs[dst] = self.memory[src]
         return 0
-    def mov_m_to_r_2(self, memory_addr, reg1_value, reg2_value, mult, dst):
-        src = memory_addr + self.regs[reg1_value] + self.regs[reg2_value] * mult
+    def mov_m_to_r_2(self, memory_addr, reg1, reg2, mult, dst):
+        src = memory_addr + self.regs[reg1] + self.regs[reg2] * mult
         print("src:", src)
         self.regs[dst] = self.memory[src]
         return 0;
-    def mov_r_to_m_2(self, src, memory_addr, reg1_value, reg2_value, mult):
-        dst = memory_addr + self.regs[reg1_value] + self.regs[reg2_value] * mult
+    def mov_r_to_m_2(self, src, memory_addr, reg1, reg2, mult):
+        dst = memory_addr + self.regs[reg1] + self.regs[reg2] * mult
         print("dst:", dst)
         self.memory[dst] = self.regs[src]
+        return 0
+    def mov_i_m_2(self, i, memory_addr, reg1, reg2, mult):
+        dst = memory_addr + self.regs[reg1] + self.regs[reg2] * mult
+        print("dst:", dst)
+        self.memory[dst] = i
+        return 0
+    def mov_r_to_r(self, src, dst):
+        self.regs[dst] = self.regs[src]
         return 0
     def add_i_to_r(self, i, r):
         self.regs[r] += i
@@ -45,6 +53,9 @@ class cpu:
         tmp = self.memory[m]
         self.memory[m] = self.regs[r]
         self.regs[r] = tmp
+        return 0
+    def lea_i_to_r(self, i, r):
+        self.regs[r] = i
         return 0
     def test_i_and_r(self, i, r):
         self.conditions = {0:0, 1:0, 2:0, 3:0}
@@ -73,6 +84,9 @@ class cpu:
     def jump_not_equal(self, target):
         if (self.conditions[3] == 1):
             self.PC = target
+        return 0
+    def neg_r_data(self, r):
+        self.regs[r] = -self.regs[r]
         return 0
     def halt(self):
         return -1
@@ -132,7 +146,8 @@ class cpu:
             opcode = one_command.split(None, 1)[0]
             if (opcode == 'mov' or opcode == 'add' or opcode == 'sub' or opcode\
             == 'test' or opcode == 'jgt' or opcode == 'jgte' or opcode == 'je'\
-            or opcode == 'jne' or opcode == 'halt' or opcode == 'xchg'):
+            or opcode == 'jne' or opcode == 'halt' or opcode == 'xchg'\
+            or opcode == 'lea' or opcode == 'neg'):
                 pc += 1
         fd.close()
         fd = open(file)
@@ -150,31 +165,49 @@ class cpu:
             one_command = line_split[0].strip()
             opcode = one_command.split(None, 1)[0]
             if (opcode == 'mov'):
+                # print("mov load")
                 datas = one_command.split(None, 1)[1]
                 first_data = datas.split(',')[0]
                 second_data = datas.split(',')[1].strip()
                 first_type, first_data = self.from_data_str_to_data(first_data)
                 second_type, second_data = self.from_data_str_to_data(second_data)
+                # print('first_type',  first_type, 'first_data:',  first_data,\
+                     # 'second_type', second_type,'second_data:', second_data)
                 if (first_type == 0 and second_type == 2):
                     self.memory[pc] = 'self.mov_i_to_m(%d, %d)' % (first_data, second_data)
                     pc += 1
+                    # print("02")
                 elif(first_type == 1 and second_type == 2):
                     self.memory[pc] = 'self.mov_r_to_m(%d, %d)' % (first_data, second_data)
-                    pc += 1   
+                    pc += 1  
+                    # print(12) 
                 elif(first_type == 2 and second_type == 1):
                     self.memory[pc] = 'self.mov_m_to_r(%d, %d)' % (first_data, second_data)
                     pc += 1
+                    # print(21)
                 elif(first_type == 3 and second_type == 1):
                     self.memory[pc] = 'self.mov_m_to_r_2(%d, %d, %d, %d ,%d)' % (\
                                                          first_data[0], first_data[1],\
                                                          first_data[2], first_data[3],\
                                                          second_data)
                     pc += 1
+                    # print(31)
                 elif(first_type == 1 and second_type == 3):
                     self.memory[pc] = 'self.mov_r_to_m_2(%d, %d, %d, %d ,%d)' % (first_data, \
                                                          second_data[0], second_data[1],\
                                                          second_data[2], second_data[3])
                     pc += 1
+                    # print(13)
+                elif(first_type == 1 and second_type == 1):
+                    self.memory[pc] = 'self.mov_r_to_r(%d, %d)' % (first_data, second_data)
+                    pc += 1
+                    # print(11)
+                elif(first_type == 0 and second_type == 3):
+                    self.memory[pc] = 'self.mov_i_m_2(%d, %d, %d, %d ,%d)' % (first_data, \
+                                                         second_data[0], second_data[1],\
+                                                         second_data[2], second_data[3])
+                    pc += 1
+                    # print('03')
             elif (opcode == 'add'):
                 datas = one_command.split(None, 1)[1]
                 first_data = datas.split(',')[0]
@@ -199,6 +232,14 @@ class cpu:
                 second_type, second_data = self.from_data_str_to_data(second_data)
                 self.memory[pc] = 'self.xchg_r_and_m(%d, %d)' % (first_data, second_data)
                 pc += 1
+            elif (opcode == 'lea'):
+                datas = one_command.split(None, 1)[1]
+                first_data = datas.split(',')[0]
+                second_data = datas.split(',')[1].strip()
+                first_type, first_data = self.from_data_str_to_data(first_data)
+                second_type, second_data = self.from_data_str_to_data(second_data)
+                self.memory[pc] = 'self.lea_i_to_r(%d, %d)' % (first_data, second_data)
+                pc += 1
             elif (opcode == 'test'):
                 datas = one_command.split(None, 1)[1]
                 first_data = datas.split(',')[0]
@@ -221,6 +262,12 @@ class cpu:
                 target = one_command.split(None, 1)[1]
                 target_pc = name_to_pc_mapping[target]
                 self.memory[pc] = 'self.jump_not_equal(%d)' % (target_pc)
+                pc += 1
+            elif (opcode == 'neg'):
+                datas = one_command.split(None, 1)[1]
+                first_data = datas.split(',')[0]
+                first_type, first_data = self.from_data_str_to_data(first_data)
+                self.memory[pc] = 'self.neg_r_data(%d)' % (first_data)
                 pc += 1
             elif (opcode == 'halt'):
                 self.memory[pc] = 'self.halt()'

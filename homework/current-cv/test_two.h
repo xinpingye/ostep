@@ -7,4 +7,10 @@ void do_test_two(void)
     return;
 }
 
+void do_test_three(void)
+{
+    printf("in test_two.h print var test_three_var is %d \n", test_three_var);
+    return;
+}
+
 #endif

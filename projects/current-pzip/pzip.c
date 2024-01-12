@@ -5,6 +5,7 @@
 #include <sys/types.h>
 #include <fcntl.h>
 #include <unistd.h>
+#include <pthread.h>
 
 char filename1[] = "file1.txt";
 char filename2[] = "file2.txt";
@@ -186,6 +187,25 @@ void multiple_file_merge(int files_num_begin, int files_num_end, char** filename
     fclose(merge_file);
 }
 
+struct args
+{
+    char* srcp;
+    long filesize;
+    int file_num;
+}; 
+
+int rc_array[4];
+
+void* worker(void* arg)
+{
+    struct args *tmp = (struct args *)(arg);
+    char* srcp = tmp->srcp;
+    long filesize = tmp->filesize;
+    int file_num = tmp->file_num;
+    rc_array[file_num] = binary_compress4(srcp, filesize, file_num);
+    return NULL;
+}
+
 int main(int argc,char* argv[])
 {
     if  (argc == 1)
@@ -204,16 +224,49 @@ int main(int argc,char* argv[])
     int srcfd = open(filename, O_RDONLY, 0);
     char* srcp = mmap(0, filesize, PROT_READ, MAP_PRIVATE, srcfd, 0);
     close(srcfd);
+
+    struct args all_args[4];
+    all_args[0].srcp = srcp;
+    all_args[0].filesize = filesize / 4;
+    all_args[0].file_num = 0;
+    all_args[1].srcp = srcp + filesize / 4;
+    all_args[1].filesize = filesize / 4;
+    all_args[1].file_num = 1;
+    all_args[2].srcp = srcp + filesize / 4 * 2;
+    all_args[2].filesize = filesize / 4;
+    all_args[2].file_num = 2;
+    all_args[3].srcp =srcp + filesize / 4 * 3;
+    all_args[3].filesize = filesize - filesize / 4 * 3;
+    all_args[3].file_num = 3;
+
+    pthread_t threads[4];
+    for (int i = 0;i < 4;i++)
+    {
+        pthread_create(&threads[i], NULL, worker, &all_args[i]);
+    }
+
+    for (int i = 0;i < 4;i++)
+    {
+        pthread_join(threads[i], NULL);
+    }
+
+    int nums1 = rc_array[0];
+    int nums2 = rc_array[1];
+    int nums3 = rc_array[2];
+    int nums4 = rc_array[3];
     /*
      * just to split to fuor part
     //merge_file_compress();
     int nums = binary_compress4(srcp, filesize, 0);
     //printf("nums:%d\n", nums);
     */
+    /*
+    
     int nums1 = binary_compress4(srcp, filesize / 4, 0);
     int nums2 = binary_compress4(srcp + filesize / 4, filesize / 4, 1);
     int nums3 = binary_compress4(srcp + filesize / 4 * 2, filesize / 4, 2);
     int nums4 = binary_compress4(srcp + filesize / 4 * 3, filesize - filesize / 4 * 3, 3);
+    */
 
     //printf("nums1:%d nums2:%d nums3:%d nums4:%d\n", nums1, nums2, nums3, nums4);
 

@@ -206,6 +206,52 @@ void* worker(void* arg)
     return NULL;
 }
 
+struct data_item
+{
+    char item_char;
+    int item_int;
+};
+
+struct data_item inter_merge(struct data_item data_item1, struct data_item data_item2, int nums, char* srcp)
+{
+    struct data_item rc_data_item;
+    if (nums != 1)
+    {
+        if (data_item1.item_char == data_item2.item_char)
+        {
+            int length = data_item1.item_int + data_item2.item_int;
+            fwrite(&length, sizeof(length), 1, stdout);
+            fwrite(&data_item1.item_char, sizeof(data_item1.item_char), 1, stdout);
+        }
+        else
+        {
+            fwrite(&data_item1.item_int, sizeof(data_item1.item_int), 1, stdout);
+            fwrite(&data_item1.item_char, sizeof(data_item1.item_char), 1, stdout);
+            fwrite(&data_item2.item_int, sizeof(data_item2.item_int), 1, stdout);
+            fwrite(&data_item2.item_char, sizeof(data_item2.item_char), 1, stdout);
+        }
+        fwrite(srcp + 5, sizeof(char), (nums - 2) * 5, stdout);
+        rc_data_item.item_int = *(int*)(srcp + (nums -1) * 5);
+        rc_data_item.item_char = *(char*)(srcp + (nums - 1) * 5 + 4);
+    }
+    else if (nums == 1)
+    {   
+        if (data_item1.item_char == data_item2.item_char)
+        {
+            rc_data_item.item_char = data_item1.item_char;
+            rc_data_item.item_int = data_item1.item_int + data_item2.item_int;
+        }
+        else
+        {
+            fwrite(&data_item1.item_int, sizeof(data_item1.item_int), 1, stdout);
+            fwrite(&data_item1.item_char, sizeof(data_item1.item_char), 1, stdout);
+            rc_data_item.item_int = data_item2.item_int;
+            rc_data_item.item_char = data_item2.item_char;
+        }
+    }
+    return rc_data_item;
+}
+
 int main(int argc,char* argv[])
 {
     if  (argc == 1)
@@ -331,25 +377,31 @@ int main(int argc,char* argv[])
     int  part2_front_len = *(int*)(src2_p);
     char part2_front_char = *(char*)(src2_p + 4);
 
-    //printf("part1_end_len:%d part1_end_char:%c\n", part1_end_len, part1_end_char);
-    //printf("part2_front_len:%d part2_front_char:%c\n", part2_front_len, part2_front_char);
+    struct data_item rc_data_item;
+    struct data_item data_item1; 
+    struct data_item data_item2;
 
-    //printf("^^^^^^^^^^^");
+    data_item1.item_int = part1_end_len;
+    data_item1.item_char = part1_end_char;
+    data_item2.item_int = part2_front_len;
+    data_item2.item_char = part2_front_char;
+    rc_data_item = inter_merge(data_item1, data_item2, nums2, src2_p);
+
+
+    /*
     char merge1_char;
     int merge1_length;
-    //printf("~~~~~~~~~~");
+
     if (nums2 != 1)
     {
         //printf("--------");
         if (part1_end_char == part2_front_char)
         {
-            //printf("***********");
             int length = part1_end_len + part2_front_len;
             fwrite(&length, sizeof(length), 1, stdout);
             //printf("%d", length);
             //printf("%c",part1_end_char); 
             fwrite(&part1_end_char, sizeof(part1_end_char), 1, stdout);
-            //printf("***********");
         }
         else
         {
@@ -369,15 +421,11 @@ int main(int argc,char* argv[])
     }
     else if (nums2 == 1)
     {   
-        //printf("++++++++");
         if (part1_end_char == part2_front_char)
         {
             merge1_char = part1_end_char;
             merge1_length = part1_end_len + part2_front_len;
-            /*
-             * 不能直接输出 得考虑三个merge的情况
-
-            */
+            //不能直接输出 得考虑三个merge的情况
         }
         else
         {
@@ -385,17 +433,26 @@ int main(int argc,char* argv[])
             //printf("%d", part1_end_len);
             //printf("%c",part1_end_char); 
             fwrite(&part1_end_char, sizeof(part1_end_char), 1, stdout);
-            /*
-             * 不能直接输出第二个 因为可能和第三个merge
-            */
+            
+            //不能直接输出第二个 因为可能和第三个merge
+            
             merge1_char = part2_front_char;
             merge1_length = part2_front_len;
         }
     }
+    */
+
 
     int  part3_front_len = *(int*)(src3_p);
     char part3_front_char = *(char*)(src3_p + 4);
 
+    data_item1.item_int = rc_data_item.item_int;
+    data_item1.item_char = rc_data_item.item_char;
+    data_item2.item_int = part3_front_len;
+    data_item2.item_char = part3_front_char;
+    rc_data_item = inter_merge(data_item1, data_item2, nums3, src3_p);
+
+    /*
     char merge2_char;
     int merge2_length;  
 
@@ -431,10 +488,7 @@ int main(int argc,char* argv[])
         {
             merge2_char = merge1_char;
             merge2_length = merge1_length + part3_front_len;
-            /*
-             * 不能直接输出 得考虑三个merge的情况
-
-            */
+            //不能直接输出 得考虑三个merge的情况
         }
         else
         {
@@ -442,17 +496,23 @@ int main(int argc,char* argv[])
             //printf("%d", merge1_length);
             //printf("%c",merge1_char);
             fwrite(&merge1_char, sizeof(merge1_char), 1, stdout); 
-            /*
-             * 不能直接输出第二个 因为可能和第三个merge
-            */
+            //不能直接输出第二个 因为可能和第三个merge
             merge2_char = part3_front_char;
             merge2_length = part3_front_len;
         }
     }
+    */
 
     int  part4_front_len = *(int*)(src4_p);
     char part4_front_char = *(char*)(src4_p + 4);
 
+    data_item1.item_int = rc_data_item.item_int;
+    data_item1.item_char = rc_data_item.item_char;
+    data_item2.item_int = part4_front_len;
+    data_item2.item_char = part4_front_char;
+    rc_data_item = inter_merge(data_item1, data_item2, nums4, src4_p);
+
+    /*
     char merge3_char;
     int merge3_length;  
 
@@ -488,10 +548,7 @@ int main(int argc,char* argv[])
         {
             merge3_char = merge2_char;
             merge3_length = merge2_length + part4_front_len;
-            /*
-             * 不直接输出 后面一起输出
-
-            */
+            //不直接输出 后面一起输出
         }
         else
         {
@@ -499,19 +556,23 @@ int main(int argc,char* argv[])
             //printf("%d",merge2_length);
             //printf("%c",merge2_char);
             fwrite(&merge2_char, sizeof(merge2_char), 1, stdout); 
-            /*
-             * 不直接输出 后面一起输出
-            */
+            //不直接输出 后面一起输出
             merge3_char = part4_front_char;
             merge3_length = part4_front_len;
         }
     }
+    */
 
-    /* now ,output all remain*/
+    fwrite(&rc_data_item.item_int, sizeof(rc_data_item.item_int), 1, stdout);
+    fwrite(&rc_data_item.item_char, sizeof(rc_data_item.item_char), 1, stdout); 
+
+    /*
+    // now ,output all remain
     fwrite(&merge3_length, sizeof(merge3_length), 1, stdout);
     //printf("%d",merge3_length);
     //printf("%c",merge3_char);
     fwrite(&merge3_char, sizeof(char), 1, stdout); 
+    */
 
     /*
     struct stat out_sbuf;
